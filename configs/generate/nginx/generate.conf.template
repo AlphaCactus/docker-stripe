@@ -1,0 +1,85 @@
+map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
+}
+
+upstream fpm {
+    server '${NGINX_FASTCGI_TARGET}';
+    keepalive 1024;
+}
+
+upstream duende {
+    server '${DUENDE_SERVER_TARGET}';
+}
+
+server {
+    include mime.types;
+    default_type application/octet-stream;
+    client_max_body_size 0;
+    listen      '${NGINX_PORT}';
+    server_name '${NGINX_SERVER_NAME}, _';
+
+    root '${DOCUMENT_ROOT}';
+
+    location ^~ /assets/ {
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri /framework/main.php?url=$uri&$query_string;
+    }
+
+    error_page 404 /assets/error-404.html;
+    error_page 500 /assets/error-500.html;
+
+    # See caveats
+    error_page 502 /assets/error-500.html;
+    error_page 503 /assets/error-500.html;
+
+    location ~ /framework/.*(main|rpc|tiny_mce_gzip)\.php$ {
+        fastcgi_buffer_size 32k;
+        fastcgi_busy_buffers_size 64k;
+        fastcgi_buffers 4 32k;
+        fastcgi_keep_conn on;
+        fastcgi_pass   fpm;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+
+    # Denials
+    location ~ /\.. {
+        deny all;
+    }
+    location ~ \.ss$ {
+        satisfy any;
+        allow 127.0.0.1;
+        deny all;
+    }
+    location ~ web\.config$ {
+        deny all;
+    }
+    location ~ \.ya?ml$ {
+        deny all;
+    }
+    location ~* README.*$ {
+        deny all;
+    }
+    location ^~ /vendor/ {
+        deny all;
+    }
+    location ~* /silverstripe-cache/ {
+        deny all;
+    }
+    location ~* composer\.(json|lock)$ {
+        deny all;
+    }
+    location ~* /(cms|framework)/silverstripe_version$ {
+        deny all;
+    }
+
+    # configure the stub status handler so fluent-bit can collect metrics
+    location /status {
+        stub_status;
+    }
+}

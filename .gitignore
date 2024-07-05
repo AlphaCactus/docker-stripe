@@ -1,0 +1,8 @@
+.DS_Store
+node_modules
+/db_auto_import/*.sql
+/db_auto_import/*.zip
+.env
+.env-save
+.idea
+*.swp
