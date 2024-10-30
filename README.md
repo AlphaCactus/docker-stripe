@@ -87,3 +87,6 @@ Support for these applications is provided:
    - List containers
 - `docker volume ls`
    - List volumes
+- `docker exec -it <service> composer install`
+   - Update composer modules in specified container. for PHP sites that use composer 
+
