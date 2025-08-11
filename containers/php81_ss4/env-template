@@ -1,0 +1,20 @@
+# For a complete list of core environment variables see
+# https://docs.silverstripe.org/en/4/getting_started/environment_management/#core-environment-variables
+SS_ENVIRONMENT_TYPE=dev
+# DB credentials
+SS_DATABASE_CLASS="MySQLDatabase"
+SS_DATABASE_SERVER=$SS_DATABASE_SERVER
+SS_DATABASE_USERNAME="$SS_DATABASE_USERNAME"
+SS_DATABASE_PASSWORD="$SS_DATABASE_PASSWORD"
+SS_DATABASE_NAME=$SS_DATABASE_NAME
+
+## Hostart
+# The .env is written on every docker compose up so this must be here so it doesn't go away every time.
+# Would like to find a better solution in the future so site specific params are not in the global .env
+ALGOLIA_INDEX_SUFFIX="_localdev"
+# Steves local dev environment mysql doesn't like sorting on a property that is not in the select
+# and throws a fatal server error
+# Quick fix is to simply disable sorting on Steve's local dev since it works fine on other machines, stage, and live.
+# Maybe in the future we can figure out how to configure mysql to allow this.
+# See ProductSiteTreeFilter.updateCMSFields()
+DISABLE_PAGE_SORT=true

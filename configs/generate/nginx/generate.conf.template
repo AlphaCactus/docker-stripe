@@ -8,10 +8,6 @@ upstream fpm {
     keepalive 1024;
 }
 
-upstream duende {
-    server '${DUENDE_SERVER_TARGET}';
-}
-
 server {
     include mime.types;
     default_type application/octet-stream;

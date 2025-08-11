@@ -6,6 +6,7 @@ services:
     build:
       context: "./containers/frontend/"
     depends_on:
+      - pyrotek_web
       - hotstart_web
     expose:
       - 80
@@ -31,16 +32,18 @@ services:
       - 3307:3306
     volumes:
       - mysql_data:/var/lib/mysql
-#     - ./db_auto_import/:/docker-entrypoint-initdb.d
+    #     - ./db_auto_import/:/docker-entrypoint-initdb.d
     networks:
       - dsbackend
     restart: unless-stopped
 
-  hotstart_php:
+  webapp_php:
+    profiles:
+      - donotstart
     depends_on:
       - mysql
-    expose:
-      - 9000
+    #    expose:
+    #      - 9000
     build:
       ssh:
         - default
@@ -59,12 +62,67 @@ services:
       SS_DATABASE_SERVER: mysql
       SS_DATABASE_USERNAME: root
       SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
-      SS_DATABASE_NAME: hotstart
+      SS_DATABASE_NAME: 'app_db'
     working_dir: /var/www/html/app
     networks:
       - dsbackend
     volumes:
-      - ${HOTSTART_LOCAL_WORKDIR}/:/var/www/html/app
+      - ../app_dir/:/var/www/html/app
+    restart: unless-stopped
+
+  webapp_web:
+    profiles:
+      - donotstart
+    build:
+      context: "./containers/nginx_reverse_proxy/"
+    depends_on:
+      - webapp_php
+    networks:
+      - dsbackend
+    expose:
+      - 80
+    ports:
+      - 8085:80
+    environment:
+      - VIRTUAL_HOST=app.local
+      - NGINX_PORT=80
+      - DOCUMENT_ROOT=/var/www/html/app/
+      - NGINX_FASTCGI_TARGET=webapp_php:9000
+      - NGINX_SERVER_NAME=app.local
+    volumes:
+      - ./configs/php81_ss4/nginx/:/etc/nginx/templates
+      - ../app_dir/:/var/www/html/app
+    restart: always
+
+  hotstart_php:
+    depends_on:
+      - mysql
+    #    expose:
+    #      - 9000
+    build:
+      ssh:
+        - default
+      context: "./containers/php74_ss4/"
+      args:
+        PHP_VERSION: 7.4
+        PHP_INI: ${PHP_INI}
+        PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+        fpm_uid: "${FPM_UID}"
+        fpm_gid: "${FPM_GID}"
+        app_dir: /var/www/html/app
+        pm_max_children: 10
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+      SS_DATABASE_SERVER: mysql
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
+      SS_DATABASE_NAME: 'hotstart'
+    working_dir: /var/www/html/app
+    networks:
+      - dsbackend
+    volumes:
+      - ../hotstart/:/var/www/html/app
     restart: unless-stopped
 
   hotstart_web:
@@ -77,18 +135,229 @@ services:
     expose:
       - 80
     ports:
-      - 8085:80
+      - 8086:80
     environment:
-      - VIRTUAL_HOST=${HOTSTART_LOCAL_DOMAIN}
+      - VIRTUAL_HOST=hotstart.local
       - NGINX_PORT=80
-      - DOCUMENT_ROOT=/var/www/html/app/public
+      - DOCUMENT_ROOT=/var/www/html/app/
       - NGINX_FASTCGI_TARGET=hotstart_php:9000
-      - NGINX_SERVER_NAME=${HOTSTART_LOCAL_DOMAIN}
+      - NGINX_SERVER_NAME=hotstart.local
     volumes:
-      - ./configs/php81_ss4/nginx/:/etc/nginx/templates
-      - ${HOTSTART_LOCAL_WORKDIR}/:/var/www/html/app
+      - ./configs/php74_ss4/nginx/:/etc/nginx/templates
+      - ../hotstart/:/var/www/html/app
     restart: always
 
+  mtsashanddoor_php:
+    depends_on:
+      - mysql
+    #    expose:
+    #      - 9000
+    build:
+      ssh:
+        - default
+      context: "./containers/php81_ss5/"
+      args:
+        PHP_VERSION: 8.1
+        PHP_INI: ${PHP_INI}
+        PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+        fpm_uid: "${FPM_UID}"
+        fpm_gid: "${FPM_GID}"
+        app_dir: /var/www/html/app
+        pm_max_children: 10
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+      SS_DATABASE_SERVER: mysql
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
+      SS_DATABASE_NAME: 'mtsashanddoor'
+    working_dir: /var/www/html/app
+    networks:
+      - dsbackend
+    volumes:
+      - ../mtsashanddoor/:/var/www/html/app
+    restart: unless-stopped
+
+  mtsashanddoor_web:
+    build:
+      context: "./containers/nginx_reverse_proxy/"
+    depends_on:
+      - mtsashanddoor_php
+    networks:
+      - dsbackend
+    expose:
+      - 80
+    ports:
+      - 80
+    environment:
+      - VIRTUAL_HOST=mtsashanddoor.local
+      - NGINX_PORT=80
+      - DOCUMENT_ROOT=/var/www/html/app/
+      - NGINX_FASTCGI_TARGET=mtsashanddoor_php:9000
+      - NGINX_SERVER_NAME=mtsashanddoor.local
+    volumes:
+      - ./configs/php81_ss5/nginx/:/etc/nginx/templates
+      - ../mtsashanddoor/:/var/www/html/app
+    restart: always
+
+  pyrotek_php:
+    depends_on:
+      - mysql
+    #    expose:
+    #      - 9000
+    build:
+      ssh:
+        - default
+      context: "./containers/php74_ss3/"
+      args:
+        PHP_VERSION: 7.4
+        PHP_INI: ${PHP_INI}
+        PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+        fpm_uid: "${FPM_UID}"
+        fpm_gid: "${FPM_GID}"
+        app_dir: /var/www/html/app
+        pm_max_children: 10
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+      SS_DATABASE_SERVER: mysql
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
+      SS_DATABASE_NAME: 'pyrotek'
+    working_dir: /var/www/html/app
+    networks:
+      - dsbackend
+    volumes:
+      - ../pyrotek/:/var/www/html/app
+    restart: unless-stopped
+
+  pyrotek_web:
+    build:
+      context: "./containers/nginx_reverse_proxy/"
+    depends_on:
+      - pyrotek_php
+    networks:
+      - dsbackend
+    expose:
+      - 80
+    ports:
+      - 8087:80
+    environment:
+      - VIRTUAL_HOST=pyrotek.local
+      - NGINX_PORT=80
+      - DOCUMENT_ROOT=/var/www/html/app/
+      - NGINX_FASTCGI_TARGET=pyrotek_php:9000
+      - NGINX_SERVER_NAME=pyrotek.local
+    volumes:
+      - ./configs/php74_ss3/nginx/:/etc/nginx/templates
+      - ../pyrotek/:/var/www/html/app
+    restart: always
+
+  ucrrifs6_php:
+    depends_on:
+      - mysql
+    #    expose:
+    #      - 9000
+    build:
+      ssh:
+        - default
+      context: "./containers/php83_ss6/"
+      args:
+        PHP_VERSION: 8.3
+        PHP_INI: ${PHP_INI}
+        PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+        fpm_uid: "${FPM_UID}"
+        fpm_gid: "${FPM_GID}"
+        app_dir: /var/www/html/app
+        pm_max_children: 10
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+      SS_DATABASE_SERVER: mysql
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
+      SS_DATABASE_NAME: 'ucrrifs6'
+    working_dir: /var/www/html/app
+    networks:
+      - dsbackend
+    volumes:
+      - ../ucrrifs6/:/var/www/html/app
+    restart: unless-stopped
+
+  ucrrifs6_web:
+    build:
+      context: "./containers/nginx_reverse_proxy/"
+    depends_on:
+      - ucrrifs6_php
+    networks:
+      - dsbackend
+    expose:
+      - 80
+    ports:
+      - 8088:80
+    environment:
+      - VIRTUAL_HOST=ucrrifs6.local
+      - NGINX_PORT=80
+      - DOCUMENT_ROOT=/var/www/html/app/
+      - NGINX_FASTCGI_TARGET=ucrrifs6_php:9000
+      - NGINX_SERVER_NAME=ucrrifs6.local
+    volumes:
+      - ./configs/php83_ss6/nginx/:/etc/nginx/templates
+      - ../ucrrifs6/:/var/www/html/app
+    restart: always
+
+  wdm_php:
+    depends_on:
+      - mysql
+    #    expose:
+    #      - 9000
+    build:
+      ssh:
+        - default
+      context: "./containers/php74_ss4/"
+      args:
+        PHP_VERSION: 7.4
+        PHP_INI: ${PHP_INI}
+        PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+        fpm_uid: "${FPM_UID}"
+        fpm_gid: "${FPM_GID}"
+        app_dir: /var/www/html/app
+        pm_max_children: 10
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG}
+      SS_DATABASE_SERVER: mysql
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: ${DB_ROOT_PASSWORD}
+      SS_DATABASE_NAME: 'wdm'
+    working_dir: /var/www/html/app
+    networks:
+      - dsbackend
+    volumes:
+      - ../wdm/:/var/www/html/app
+    restart: unless-stopped
+
+  wdm_web:
+    build:
+      context: "./containers/nginx_reverse_proxy/"
+    depends_on:
+      - wdm_php
+    networks:
+      - dsbackend
+    expose:
+      - 80
+    ports:
+      - 80
+    environment:
+      - VIRTUAL_HOST=wdm.local
+      - NGINX_PORT=80
+      - DOCUMENT_ROOT=/var/www/html/app/
+      - NGINX_FASTCGI_TARGET=wdm_php:9000
+      - NGINX_SERVER_NAME=wdm.local
+    volumes:
+      - ./configs/php74_ss4/nginx/:/etc/nginx/templates
+      - ../wdm/:/var/www/html/app
+    restart: always
 networks:
   dsfrontend:
   dsbackend:

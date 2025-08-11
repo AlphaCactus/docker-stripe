@@ -7,7 +7,7 @@ server {
     listen      '${NGINX_PORT}';
     server_name '${NGINX_SERVER_NAME}, _';
 
-    root '${DOCUMENT_ROOT}/public';
+    root '${DOCUMENT_ROOT}';
 
     error_page 404 /assets/error-404.html;
     error_page 500 /assets/error-500.html;
@@ -15,18 +15,10 @@ server {
     error_page 503 /assets/error-500.html;
 
     location / {
-        try_files $uri /index.php?$query_string;
-    }
-
-    location /public/ {
-        try_files $uri /index.php?$query_string;
+        try_files $uri /framework/main.php?url=$uri&$query_string;
     }
 
     location ~ /\.(htaccess|method)$ {
-        return 403;
-    }
-
-    location ~ ^/assets/.protected/ {
         return 403;
     }
 
@@ -34,6 +26,17 @@ server {
         sendfile on;
         try_files $uri /index.php?$query_string;
     }
+
+    location ~ /framework/.*(main|rpc|tiny_mce_gzip)\.php$ {
+            fastcgi_buffer_size 32k;
+            fastcgi_busy_buffers_size 64k;
+            fastcgi_buffers 4 32k;
+            fastcgi_keep_conn on;
+            fastcgi_pass   fpm;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include        fastcgi_params;
+        }
 
     location ~ ^/assets/error-\d\d\d\.html$ {
         try_files $uri =404;
@@ -50,14 +53,4 @@ server {
         try_files $uri =404;
     }
 
-    location /index.php {
-        fastcgi_buffer_size 32k;
-        fastcgi_busy_buffers_size 64k;
-        fastcgi_buffers 4 32k;
-        fastcgi_keep_conn on;
-        fastcgi_pass   fpm;
-        fastcgi_index  index.php;
-        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include        fastcgi_params;
-    }
 }

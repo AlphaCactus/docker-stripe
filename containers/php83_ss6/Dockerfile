@@ -1,4 +1,4 @@
-ARG PHP_VERSION="8.1"
+ARG PHP_VERSION="8.3"
 FROM php:8.1-fpm-buster
 
 # after every FROM statement, all the ARGs get collected and are no longer available. Be careful with multi-stage builds.
@@ -16,7 +16,7 @@ RUN install-php-extensions ctype dom fileinfo hash intl \
     mbstring session simplexml tokenizer opcache mysqli \
     gd bcmath zip xml xdebug soap pdo @composer
 
-RUN apt-get update && apt-get install -y gettext-base
+RUN apt-get update && apt-get install -y gettext-base git zip
 
 ARG fpm_uid=1000
 ARG fpm_gid=1000
