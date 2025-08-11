@@ -5,9 +5,7 @@ services:
   frontend:
     build:
       context: "./containers/frontend/"
-    depends_on:
-      - pyrotek_web
-      - hotstart_web
+#    depends_on:
     expose:
       - 80
     ports:
@@ -39,7 +37,8 @@ services:
 
   webapp_php:
     profiles:
-      - donotstart
+      - all_sites
+      - web_app
     depends_on:
       - mysql
     #    expose:
@@ -72,7 +71,8 @@ services:
 
   webapp_web:
     profiles:
-      - donotstart
+      - all_sites
+      - web_app
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
@@ -95,6 +95,9 @@ services:
     restart: always
 
   hotstart_php:
+    profiles:
+      - all_sites
+      - hotstart
     depends_on:
       - mysql
     #    expose:
@@ -126,6 +129,9 @@ services:
     restart: unless-stopped
 
   hotstart_web:
+    profiles:
+      - all_sites
+      - hotstart
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
@@ -148,6 +154,9 @@ services:
     restart: always
 
   mtsashanddoor_php:
+    profiles:
+      - all_sites
+      - mtsashanddoor
     depends_on:
       - mysql
     #    expose:
@@ -179,6 +188,9 @@ services:
     restart: unless-stopped
 
   mtsashanddoor_web:
+    profiles:
+      - all_sites
+      - mtsashanddoor
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
@@ -201,6 +213,9 @@ services:
     restart: always
 
   pyrotek_php:
+    profiles:
+      - all_sites
+      - pyrotek
     depends_on:
       - mysql
     #    expose:
@@ -232,6 +247,9 @@ services:
     restart: unless-stopped
 
   pyrotek_web:
+    profiles:
+      - all_sites
+      - pyrotek
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
@@ -254,6 +272,9 @@ services:
     restart: always
 
   ucrrifs6_php:
+    profiles:
+      - all_sites
+      - ucrrifs6
     depends_on:
       - mysql
     #    expose:
@@ -285,6 +306,9 @@ services:
     restart: unless-stopped
 
   ucrrifs6_web:
+    profiles:
+      - all_sites
+      - ucrrifs6
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
@@ -307,6 +331,9 @@ services:
     restart: always
 
   wdm_php:
+    profiles:
+      - all_sites
+      - wdm
     depends_on:
       - mysql
     #    expose:
@@ -338,6 +365,9 @@ services:
     restart: unless-stopped
 
   wdm_web:
+    profiles:
+      - all_sites
+      - wdm
     build:
       context: "./containers/nginx_reverse_proxy/"
     depends_on:
